@@ -1,0 +1,51 @@
+---
+description: Refresherspace conventions — React structure, imports, styled-components, and theme usage
+alwaysApply: true
+---
+
+# Refresherspace Project Rules
+
+## Scope
+
+- App code lives in `src/` (React + TypeScript + styled-components).
+- Shared UI primitives: `src/components/ui/`
+- Pages: `src/pages/`
+- Theme: `src/styles/theme.ts`
+- Keep diffs focused; match existing patterns in neighboring files.
+
+## Import groups
+
+Separate imports with blank lines and a comment label. Order:
+
+1. External packages (no comment) — `react`, `styled-components`, etc.
+2. `// Hooks`
+3. `// Components`
+4. `// Pages` — only in routing files like `App.tsx`
+5. `// Utils` — helpers from `lib/`
+6. `// Types` — when importing from `types/`
+7. `// Styles` — theme, GlobalStyle
+
+Use only the groups a file needs. Do not mix unlabeled local imports into a group.
+
+## Pages & feature components
+
+1. **Arrow function components** — `const MyPage = () => { ... }`, not `function MyPage()`.
+2. **Module constants/data** above the component (e.g. config arrays, static maps).
+3. **Component body first**, then page-local styled-components **below** the component under a `// Style Overrides` comment.
+4. **Default export** for pages: `export default MyPage;`
+
+Shared UI in `components/ui/` may colocate styled definitions with exports; pages and feature components must not define styled-components above the component.
+
+## Styled-components & theme
+
+- Read colors from `theme.colors` — use semantic tokens: `background`, `primary`, `secondary`, `tertiary`, `muted`, `border`, `success`, `danger`, `accent`.
+- Handle states in component CSS, not new theme tokens:
+  - hover: `filter: brightness(0.92)` or soft background shifts
+  - disabled: `opacity: 0.5` + `cursor: not-allowed`
+- Use transient props with `$` prefix for styled-only props (`$variant`, `$size`, `$align`).
+- **Always use styled-components for styling — never the inline `style` prop.**
+
+## General
+
+- Prefer existing hooks and `components/ui` exports over new abstractions.
+- Only commit when explicitly asked.
