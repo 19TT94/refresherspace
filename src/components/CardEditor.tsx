@@ -16,8 +16,8 @@ interface CardEditorProps {
   initialMode?: FaceMode
   onChange: (patch: Partial<Pick<Flashcard, 'front' | 'back'>>) => void
   onRemove: () => void
-  onMoveUp: () => void
-  onMoveDown: () => void
+  onPreviousCard: () => void
+  onNextCard: () => void
 }
 
 const ChevronUpIcon = () => (
@@ -82,8 +82,8 @@ const CardEditor = ({
   initialMode = 'preview',
   onChange,
   onRemove,
-  onMoveUp,
-  onMoveDown,
+  onPreviousCard,
+  onNextCard,
 }: CardEditorProps) => {
   const [flipped, setFlipped] = useState(false)
   const [frontMode, setFrontMode] = useState<FaceMode>(initialMode)
@@ -110,10 +110,10 @@ const CardEditor = ({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={onMoveUp}
+            onClick={onPreviousCard}
             disabled={index === 0}
-            aria-label={`Move card ${index + 1} up`}
-            title="Move up"
+            aria-label="Previous card"
+            title="Previous card"
           >
             <ChevronUpIcon />
           </IconButton>
@@ -121,10 +121,10 @@ const CardEditor = ({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={onMoveDown}
+            onClick={onNextCard}
             disabled={index === total - 1}
-            aria-label={`Move card ${index + 1} down`}
-            title="Move down"
+            aria-label="Next card"
+            title="Next card"
           >
             <ChevronDownIcon />
           </IconButton>

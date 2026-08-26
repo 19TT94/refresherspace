@@ -83,7 +83,7 @@ export const SearchSelect = ({
   }
 
   return (
-    <FieldGroup ref={rootRef}>
+    <FieldGroup ref={rootRef} $menuOpen={open}>
       {(label || help) && (
         <LabelRow>
           {label && <Label htmlFor={fieldId}>{label}</Label>}
@@ -113,7 +113,11 @@ export const SearchSelect = ({
               type="button"
               role="option"
               $size={menuSize}
-              onClick={() => selectOption(option)}
+              onPointerDown={(event) => {
+                event.preventDefault()
+                event.stopPropagation()
+                selectOption(option)
+              }}
             >
               {option.label}
             </OptionButton>
@@ -123,7 +127,9 @@ export const SearchSelect = ({
               type="button"
               role="option"
               $size={menuSize}
-              onClick={() => {
+              onPointerDown={(event) => {
+                event.preventDefault()
+                event.stopPropagation()
                 onChange(value.trim())
                 setOpen(false)
               }}
@@ -131,17 +137,19 @@ export const SearchSelect = ({
               Create “{value.trim()}”
             </OptionButton>
           )}
-          {filtered.length === 0 && !(allowCreate && value.trim().length > 0) && (
-            <EmptyState $size={menuSize}>{emptyMessage}</EmptyState>
-          )}
+          {filtered.length === 0 &&
+            !(allowCreate && value.trim().length > 0) && (
+              <EmptyState $size={menuSize}>{emptyMessage}</EmptyState>
+            )}
         </Menu>
       )}
     </FieldGroup>
   )
 }
 
-const FieldGroup = styled.div`
+const FieldGroup = styled.div<{ $menuOpen: boolean }>`
   position: relative;
+  z-index: ${({ $menuOpen }) => ($menuOpen ? 5 : 'auto')};
   display: flex;
   flex-direction: column;
   gap: 0.375rem;
@@ -216,8 +224,7 @@ const OptionButton = styled.button<{ $size: 'md' | 'lg' }>`
 
 const EmptyState = styled.p<{ $size: 'md' | 'lg' }>`
   margin: 0;
-  padding: ${({ $size }) =>
-    $size === 'lg' ? '1rem' : '0.75rem 0.875rem'};
+  padding: ${({ $size }) => ($size === 'lg' ? '1rem' : '0.75rem 0.875rem')};
   font-size: ${({ $size, theme }) =>
     $size === 'lg' ? theme.fontSizes.base : theme.fontSizes.sm};
   color: ${({ theme }) => theme.colors.muted};

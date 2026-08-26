@@ -40,7 +40,7 @@ refresherspace/
     ├── components/       # Feature components + ui primitives
     ├── hooks/            # useDeckEditor
     ├── lib/              # Store + deck JSON helpers
-    ├── pages/            # DeckManager, CardBuilder
+    ├── pages/            # DeckManager, CardBuilder, Practice, ComponentLibrary
     ├── styles/           # theme, GlobalStyle
     └── types/            # Deck / collection types
 ```
@@ -49,5 +49,6 @@ refresherspace/
 
 - **Deck manager (`/`)** — create a deck with a title and target collection (search-select). Blank collection uses Default; a new name creates a collection.
 - **Card builder (`/decks/:deckId`)** — edit cards as Markdown with flip + preview; **Import JSON** / **View JSON** (export includes plain-text fields for other apps).
+- **Component library (`/components`)** — live showcase of theme tokens and shared UI primitives.
 
 See `docs/` for product vision and roadmap.
