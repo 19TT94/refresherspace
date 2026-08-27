@@ -7,6 +7,7 @@ import { useDeckEditor } from '../hooks/useDeckEditor'
 
 // Components
 import CardEditor from '../components/CardEditor'
+import ChatDrawer from '../components/ChatDrawer'
 import JsonPreview from '../components/JsonPreview'
 import { Button, Card, Modal, SearchSelect } from '../components/ui'
 
@@ -29,6 +30,7 @@ const CardBuilderPage = () => {
   const navigate = useNavigate()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [jsonModalOpen, setJsonModalOpen] = useState(false)
+  const [agentOpen, setAgentOpen] = useState(false)
   const [importError, setImportError] = useState<string | null>(null)
   const [activeCardId, setActiveCardId] = useState('')
   const [cardQuery, setCardQuery] = useState('')
@@ -40,7 +42,6 @@ const CardBuilderPage = () => {
     updateCard,
     addCard,
     removeCard,
-    moveCard,
     copyJson,
     downloadJson,
     reload,
@@ -126,111 +127,143 @@ const CardBuilderPage = () => {
     setCardQuery('')
   }
 
+  const handlePreviousCard = () => {
+    const previous = deck.cards[resolvedIndex - 1]
+    if (!previous) return
+    setEditorMode('preview')
+    setActiveCardId(previous.id)
+    setCardQuery('')
+  }
+
+  const handleNextCard = () => {
+    const next = deck.cards[resolvedIndex + 1]
+    if (!next) return
+    setEditorMode('preview')
+    setActiveCardId(next.id)
+    setCardQuery('')
+  }
+
   return (
-    <Page>
-      <Header>
-        <BackLink to="/">← Decks</BackLink>
-        <TitleRow>
-          <div>
-            <Brand>{deck.title || 'Untitled deck'}</Brand>
-            <Subtitle>
-              Collection: {collection?.name ?? 'Default'} · add cards and export
-              JSON
-            </Subtitle>
-          </div>
-          <HeaderActions>
+    // TODO: pass deck + apply-draft handlers once ChatDrawer can propose cards
+    <ChatDrawer open={agentOpen} onClose={() => setAgentOpen(false)}>
+      <Page>
+        <Header>
+          <BackLink to="/">← Decks</BackLink>
+          <TitleRow>
+            <div>
+              <Brand>{deck.title || 'Untitled deck'}</Brand>
+              <Subtitle>
+                Collection: {collection?.name ?? 'Default'} · add cards and
+                export JSON
+              </Subtitle>
+            </div>
+            <HeaderActions>
+              <Button
+                type="button"
+                variant={agentOpen ? 'primary' : 'outline'}
+                size="sm"
+                onClick={() => setAgentOpen((current) => !current)}
+              >
+                Agent
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={() => navigate(`/decks/${deck.id}/practice`)}
+              >
+                Practice
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleImportClick}
+              >
+                Import JSON
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setJsonModalOpen(true)}
+              >
+                View JSON
+              </Button>
+              <HiddenFileInput
+                ref={fileInputRef}
+                type="file"
+                accept="application/json,.json"
+                onChange={handleImportFile}
+              />
+            </HeaderActions>
+          </TitleRow>
+          {importError && <ImportError role="alert">{importError}</ImportError>}
+        </Header>
+
+        <EditorSection>
+          <Toolbar>
+            <CardPicker>
+              <SearchSelect
+                label="Find card"
+                placeholder="Search other cards in this deck…"
+                value={cardQuery}
+                options={otherCardOptions}
+                onChange={setCardQuery}
+                onSelectOption={(option) => {
+                  setEditorMode('preview')
+                  setActiveCardId(option.value)
+                  setCardQuery('')
+                }}
+                allowCreate={false}
+                emptyMessage={
+                  deck.cards.length <= 1
+                    ? 'No other cards in this deck'
+                    : 'No matching cards'
+                }
+                menuSize="lg"
+              />
+            </CardPicker>
             <Button
               type="button"
               variant="primary"
               size="sm"
-              onClick={() => navigate(`/decks/${deck.id}/practice`)}
+              onClick={handleAddCard}
             >
-              Practice
+              Add card
             </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={handleImportClick}
-            >
-              Import JSON
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => setJsonModalOpen(true)}
-            >
-              View JSON
-            </Button>
-            <HiddenFileInput
-              ref={fileInputRef}
-              type="file"
-              accept="application/json,.json"
-              onChange={handleImportFile}
-            />
-          </HeaderActions>
-        </TitleRow>
-        {importError && <ImportError role="alert">{importError}</ImportError>}
-      </Header>
+          </Toolbar>
 
-      <EditorSection>
-        <Toolbar>
-          <CardPicker>
-            <SearchSelect
-              label="Find card"
-              placeholder="Search other cards in this deck…"
-              value={cardQuery}
-              options={otherCardOptions}
-              onChange={setCardQuery}
-              onSelectOption={(option) => {
-                setEditorMode('preview')
-                setActiveCardId(option.value)
-                setCardQuery('')
-              }}
-              allowCreate={false}
-              emptyMessage={
-                deck.cards.length <= 1
-                  ? 'No other cards in this deck'
-                  : 'No matching cards'
-              }
-              menuSize="lg"
+          <ActiveEditor>
+            <CardEditor
+              key={`${activeCard.id}-${editorMode}`}
+              card={activeCard}
+              index={resolvedIndex}
+              total={deck.cards.length}
+              initialMode={editorMode}
+              onChange={(patch) => updateCard(activeCard.id, patch)}
+              onRemove={handleRemoveCard}
+              onPreviousCard={handlePreviousCard}
+              onNextCard={handleNextCard}
             />
-          </CardPicker>
-          <Button type="button" variant="primary" size="sm" onClick={handleAddCard}>
-            Add card
-          </Button>
-        </Toolbar>
+          </ActiveEditor>
+        </EditorSection>
 
-        <ActiveEditor>
-          <CardEditor
-            key={`${activeCard.id}-${editorMode}`}
-            card={activeCard}
-            index={resolvedIndex}
-            total={deck.cards.length}
-            initialMode={editorMode}
-            onChange={(patch) => updateCard(activeCard.id, patch)}
-            onRemove={handleRemoveCard}
-            onMoveUp={() => moveCard(activeCard.id, 'up')}
-            onMoveDown={() => moveCard(activeCard.id, 'down')}
+        <Modal
+          open={jsonModalOpen}
+          title="JSON output"
+          onClose={() => setJsonModalOpen(false)}
+          maxWidth="40rem"
+        >
+          <JsonPreview
+            json={json}
+            copyStatus={copyStatus}
+            onCopy={copyJson}
+            onDownload={downloadJson}
           />
-        </ActiveEditor>
-      </EditorSection>
-
-      <Modal
-        open={jsonModalOpen}
-        title="JSON output"
-        onClose={() => setJsonModalOpen(false)}
-        maxWidth="40rem"
-      >
-        <JsonPreview
-          json={json}
-          copyStatus={copyStatus}
-          onCopy={copyJson}
-          onDownload={downloadJson}
-        />
-      </Modal>
-    </Page>
+        </Modal>
+      </Page>
+    </ChatDrawer>
   )
 }
 
@@ -316,6 +349,8 @@ const EditorSection = styled(Card)`
 `
 
 const Toolbar = styled.div`
+  position: relative;
+  z-index: 1;
   flex-shrink: 0;
   display: flex;
   align-items: flex-end;

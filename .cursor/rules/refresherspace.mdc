@@ -29,6 +29,8 @@ Use only the groups a file needs. Do not mix unlabeled local imports into a grou
 
 ## Pages & feature components
 
+Follow `src/pages/ComponentLibrary.tsx`:
+
 1. **Arrow function components** — `const MyPage = () => { ... }`, not `function MyPage()`.
 2. **Module constants/data** above the component (e.g. config arrays, static maps).
 3. **Component body first**, then page-local styled-components **below** the component under a `// Style Overrides` comment.
@@ -44,6 +46,14 @@ Shared UI in `components/ui/` may colocate styled definitions with exports; page
   - disabled: `opacity: 0.5` + `cursor: not-allowed`
 - Use transient props with `$` prefix for styled-only props (`$variant`, `$size`, `$align`).
 - **Always use styled-components for styling — never the inline `style` prop.**
+
+## Incomplete features
+
+When shipping a stub or partial feature, leave `// TODO:` comments at the incomplete seams. Each TODO should name the next concrete step, not “finish this.” Do not leave silent placeholders that look complete.
+
+```ts
+// TODO: send this message through the BYOK provider client
+```
 
 ## General
 
