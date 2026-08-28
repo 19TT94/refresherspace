@@ -2,6 +2,8 @@
 
 Exploratory notes for an in-app agent that helps **create cards** and **study decks**. Not a build plan yet — a place to sharpen the idea before we wire models, tools, or UI.
 
+This is the **product** agent (ChatDrawer / planned `src/agent/`). Coding agents working on this repo start at [`AGENTS.md`](../AGENTS.md).
+
 ## Why an agent fits Refresherspace
 
 Authoring and study are already split surfaces. An agent can sit in both without replacing either:
@@ -175,6 +177,7 @@ Early spike candidate: **Card Builder panel only** (create/expand on text cards)
 
 ## Related
 
+- Coding-agent entrypoints (Cursor and other tools working on this repo): [AGENTS.md](../AGENTS.md)
 - Product split: [overview.md](./overview.md)
 - Format constraints: [deck-format.md](./deck-format.md)
 - Sequencing: [roadmap.md](./roadmap.md)

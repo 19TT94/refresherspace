@@ -32,9 +32,10 @@ The app runs at `http://localhost:5173`.
 
 ```
 refresherspace/
+├── AGENTS.md             # Coding-agent entrypoint (labels, layout, deck-write policy)
 ├── docs/                 # Product scoping and format notes
 ├── .cursor/
-│   ├── rules/            # Project conventions for agents
+│   ├── rules/            # Cursor-injected conventions
 │   └── skills/           # Local Cursor skills
 └── src/
     ├── components/       # Feature components + ui primitives

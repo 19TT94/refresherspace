@@ -59,3 +59,4 @@ When shipping a stub or partial feature, leave `// TODO:` comments at the incomp
 
 - Prefer existing hooks and `components/ui` exports over new abstractions.
 - Only commit when explicitly asked.
+- Issue labels, product vs coding agent, and `src/agent/` layout: `AGENTS.md`.
