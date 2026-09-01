@@ -28,13 +28,7 @@ const cardOptionLabel = (card: Flashcard, index: number) => {
 const CardBuilderPage = () => {
   const { deckId = '' } = useParams()
   const navigate = useNavigate()
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [jsonModalOpen, setJsonModalOpen] = useState(false)
-  const [agentOpen, setAgentOpen] = useState(false)
-  const [importError, setImportError] = useState<string | null>(null)
-  const [activeCardId, setActiveCardId] = useState('')
-  const [cardQuery, setCardQuery] = useState('')
-  const [editorMode, setEditorMode] = useState<'edit' | 'preview'>('preview')
+
   const {
     deck,
     json,
@@ -46,7 +40,17 @@ const CardBuilderPage = () => {
     downloadJson,
     reload,
   } = useDeckEditor(deckId)
+  
+  const [jsonModalOpen, setJsonModalOpen] = useState(false)
+  const [agentOpen, setAgentOpen] = useState(false)
+  const [importError, setImportError] = useState<string | null>(null)
+  const [activeCardId, setActiveCardId] = useState('')
+  const [cardQuery, setCardQuery] = useState('')
+  const [editorMode, setEditorMode] = useState<'edit' | 'preview'>('preview')
 
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Set the active card to the first card in the deck if no active card is set
   useEffect(() => {
     if (!deck) return
     setActiveCardId((current) =>
@@ -64,7 +68,8 @@ const CardBuilderPage = () => {
   const activeCard =
     deck && activeIndex >= 0 ? deck.cards[activeIndex] : deck?.cards[0]
 
-  const otherCardOptions = useMemo(() => {
+  // Map all cards in the deck for search select
+  const allCards = useMemo(() => {
     if (!deck || !activeCard) return []
     return deck.cards
       .map((card, index) => ({ card, index }))
@@ -81,6 +86,7 @@ const CardBuilderPage = () => {
   }
 
   const collection = getCollection(loadStore(), deck.collectionId)
+  // Resolved index of the active card in the deck (used for navigation)
   const resolvedIndex =
     activeIndex >= 0
       ? activeIndex
@@ -205,10 +211,9 @@ const CardBuilderPage = () => {
           <Toolbar>
             <CardPicker>
               <SearchSelect
-                label="Find card"
                 placeholder="Search other cards in this deck…"
                 value={cardQuery}
-                options={otherCardOptions}
+                options={allCards}
                 onChange={setCardQuery}
                 onSelectOption={(option) => {
                   setEditorMode('preview')
