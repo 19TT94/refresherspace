@@ -14,10 +14,25 @@ Web app for authoring flashcard decks and exporting them as JSON. Mobile study c
 
 ```bash
 npm install
-npm run dev
+npm run dev # Vite process
+
 ```
 
 The app runs at `http://localhost:5173`.
+
+## Local Agent (Ollama)
+
+Use `ollama serve` in another terminal to test agent locally
+
+If you don't have Ollama:
+
+```bash
+brew install ollama          # or: brew install --cask ollama-app
+ollama serve                 # skip if the Mac app is already running
+ollama pull llama3.2         # once; then you can close that terminal
+```
+
+Then open a deck → **Agent** → send a message. The hardcoded model is `llama3.2` in `src/lib/ollamaChat.ts`.
 
 ## Scripts
 
