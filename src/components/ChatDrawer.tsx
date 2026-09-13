@@ -4,9 +4,9 @@ import {
   useId,
   useRef,
   useState,
-  type FormEvent,
   type KeyboardEvent,
   type PointerEvent,
+  type SubmitEvent,
   type ReactNode,
 } from 'react'
 import styled from 'styled-components'
@@ -14,12 +14,16 @@ import styled from 'styled-components'
 // Components
 import { Button, CardTitle } from './ui'
 
+// Utils
+import { chatWithOllama } from '../lib/ollamaChat'
+
 export type ChatRole = 'user' | 'assistant'
 
 export interface ChatMessage {
   id: string
   role: ChatRole
   content: string
+  error?: boolean
 }
 
 interface ChatDrawerProps {
@@ -31,9 +35,9 @@ interface ChatDrawerProps {
 
 // TODO: accept deck context (title, collection, cards) so the model can list/propose without guessing
 // TODO: expose a draft-cards callback so Card Builder can Apply through the existing store
-// TODO: add BYOK settings (API key or OpenAI-compatible endpoint) and a provider client
+// TODO: replace the hardcoded Ollama client with the BYOK/proxy client (#5 / #11)
 // TODO: tool schemas — list_cards, propose_cards, update_draft (see docs/agent.md)
-// TODO: disclose when card text leaves the device; keep agent-free builder working without a key
+// TODO: disclose when card text leaves the device once BYOK/cloud is wired
 
 const SLIDE_MS = 220
 const DEFAULT_WIDTH = 416
@@ -87,6 +91,8 @@ const ChatDrawer = ({
   const [dragging, setDragging] = useState(false)
   const [draft, setDraft] = useState('')
   const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [pending, setPending] = useState(false)
+  const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     const handleResize = () => setWidth((current) => clampWidth(current))
@@ -113,7 +119,11 @@ const ChatDrawer = ({
   useEffect(() => {
     if (!open) return
     bottomRef.current?.scrollIntoView({ block: 'end' })
-  }, [messages, open])
+  }, [messages, open, pending])
+
+  useEffect(() => {
+    return () => abortRef.current?.abort()
+  }, [])
 
   useEffect(() => {
     if (!dragging) return
@@ -185,20 +195,61 @@ const ChatDrawer = ({
     }
   }
 
-  const sendMessage = useCallback(() => {
+  const sendMessage = useCallback(async () => {
     const content = draft.trim()
-    if (!content) return
+    if (!content || pending) return
 
-    // TODO: call the model (BYOK) and append an assistant reply; user messages only echo locally today
-    // TODO: propose-cards spike — draft list in this thread, then Apply writes text cards to the deck
-    setMessages((current) => [
-      ...current,
-      { id: crypto.randomUUID(), role: 'user', content },
-    ])
+    const userMessage: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: 'user',
+      content,
+    }
+
+    const history = [...messages, userMessage]
+    setMessages(history)
     setDraft('')
-  }, [draft])
+    setPending(true)
 
-  const handleSubmit = (event: FormEvent) => {
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+
+    const turns = history
+      .filter((message) => !message.error)
+      .map((message) => ({ role: message.role, content: message.content }))
+
+    try {
+      const reply = await chatWithOllama(turns, controller.signal)
+      setMessages((current) => [
+        ...current,
+        { id: crypto.randomUUID(), role: 'assistant', content: reply },
+      ])
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return
+      }
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Could not reach Ollama. Start it with `ollama serve` and try again.'
+      setMessages((current) => [
+        ...current,
+        {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: message,
+          error: true,
+        },
+      ])
+    } finally {
+      if (abortRef.current === controller) {
+        abortRef.current = null
+        setPending(false)
+      }
+    }
+  }, [draft, messages, pending])
+
+  const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault()
     sendMessage()
   }
@@ -250,22 +301,32 @@ const ChatDrawer = ({
             </Button>
           </Header>
 
-          <Thread>
+          <Thread aria-busy={pending}>
             {messages.length === 0 ? (
               <Empty>
                 <EmptyTitle>Start a conversation</EmptyTitle>
                 <EmptyCopy>
                   Ask to draft cards from notes, expand this deck, or tighten
-                  wording. Nothing is sent to a model yet.
+                  wording. Replies come from Ollama on this machine.
                 </EmptyCopy>
               </Empty>
             ) : (
               <MessageList>
                 {messages.map((message) => (
                   <MessageItem key={message.id} $role={message.role}>
-                    <Bubble $role={message.role}>{message.content}</Bubble>
+                    <Bubble
+                      $role={message.role}
+                      $error={Boolean(message.error)}
+                    >
+                      {message.content}
+                    </Bubble>
                   </MessageItem>
                 ))}
+                {pending ? (
+                  <MessageItem $role="assistant">
+                    <PendingBubble>Thinking…</PendingBubble>
+                  </MessageItem>
+                ) : null}
               </MessageList>
             )}
             <div ref={bottomRef} />
@@ -289,9 +350,9 @@ const ChatDrawer = ({
                 type="submit"
                 variant="primary"
                 size="sm"
-                disabled={!draft.trim()}
+                disabled={!draft.trim() || pending}
               >
-                Send
+                {pending ? 'Sending' : 'Send'}
               </Button>
             </ComposerFooter>
           </Composer>
@@ -440,7 +501,7 @@ const MessageItem = styled.li<{ $role: ChatRole }>`
     $role === 'user' ? 'flex-end' : 'flex-start'};
 `
 
-const Bubble = styled.div<{ $role: ChatRole }>`
+const Bubble = styled.div<{ $role: ChatRole; $error?: boolean }>`
   max-width: 85%;
   padding: ${({ theme }) => `${theme.spacing[2]} ${theme.spacing[3]}`};
   border-radius: ${({ theme }) => theme.radii.lg};
@@ -448,9 +509,23 @@ const Bubble = styled.div<{ $role: ChatRole }>`
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
-  color: ${({ theme }) => theme.colors.text};
+  color: ${({ theme, $error }) =>
+    $error ? theme.colors.danger : theme.colors.text};
   background: ${({ theme, $role }) =>
     $role === 'user' ? theme.colors.primarySoft : theme.colors.surfaceHover};
+  border: ${({ theme, $error }) =>
+    $error ? `1px solid ${theme.colors.danger}` : '1px solid transparent'};
+`
+
+const PendingBubble = styled.div`
+  max-width: 85%;
+  padding: ${({ theme }) => `${theme.spacing[2]} ${theme.spacing[3]}`};
+  border-radius: ${({ theme }) => theme.radii.lg};
+  font-size: ${({ theme }) => theme.fontSizes.sm};
+  line-height: 1.5;
+  font-style: italic;
+  color: ${({ theme }) => theme.colors.muted};
+  background: ${({ theme }) => theme.colors.surfaceHover};
 `
 
 const Composer = styled.form`
