@@ -29,6 +29,7 @@ Use **both** an `AGENTS.md` and Cursor rules — not one or the other.
 | `AGENTS.md` (this file) | Tool-agnostic: labels, product vs coding agent, `src/agent/` sketch, deck-write policy |
 | `.cursor/rules/refresherspace.mdc` | Always-on Cursor conventions (imports, pages, styled-components, TODOs) |
 | `.cursor/skills/` | How-tos (e.g. styled-components), not policy |
+| `.cursor/review/` | Review guide applied by the global `code-review` skill |
 
 Keep rules short and Cursor-specific. Put anything a non-Cursor agent must see here.
 
