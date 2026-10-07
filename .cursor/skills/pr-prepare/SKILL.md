@@ -35,7 +35,7 @@ block** the user can copy into GitHub.
    - Use **Deep** for store/JSON, product-agent, or `src/agent/` changes
 
 3. **Local review**
-   - Use [code-review](../code-review/SKILL.md) if the user wants findings first
+   - Use the `code-review` skill (it applies `.cursor/review/refresherspace.md`) if the user wants findings first
 
 4. **Open PR**
    - Target: `main`
